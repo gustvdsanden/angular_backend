@@ -4,15 +4,15 @@ const Post = db.posts;
 // Create and Save a new article
 exports.create = (req, res) => {
   // Validate request
-  if (!req.body.content) {
+  if (!req.body.Content || !req.body.Author_Id) {
     res.status(400).send({ message: "Posts can not be empty!" });
     return;
   }
 
   // Create a article
   const post = new Post({
-    Content: req.body.content,
-    Author: req.body.author_id,
+    Content: req.body.Content,
+    Author: req.body.Author_Id,
   });
 
   // Save article in the database
@@ -34,7 +34,7 @@ exports.findAll = (req, res) => {
   const content = req.query.content;
   var condition = content ? { Content: { $regex: new RegExp(content), $options: "i" } } : {};
 
-  Post.find(condition).populate('author').populate('likes').populate('comments')
+  Post.find(condition).populate('Author').populate('Likes').populate('Comments')
     .then(data => {
       res.send(data);
     })
