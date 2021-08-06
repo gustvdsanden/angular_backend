@@ -1,4 +1,5 @@
-const db = require("../models");
+const { posts } = require('../models');
+const db = require('../models');
 const Post = db.posts;
 
 // Create and Save a new article
@@ -11,20 +12,20 @@ exports.create = (req, res) => {
 
   // Create a article
   const post = new Post({
-    Content: req.body.Content,
-    Author: req.body.Author_Id,
+    Content: req.body.content,
+    Author: req.userId,
   });
 
   // Save article in the database
   post
     .save(post)
-    .then(data => {
-      res.send(data);
+    .then(async (data) => {
+      const populatedPost = await data.populate('Author').populate('Likes').populate('Comments').execPopulate();
+      res.send(populatedPost);
     })
-    .catch(err => {
+    .catch((err) => {
       res.status(500).send({
-        message:
-          err.message || "Some error ss while creating the article."
+        message: err.message || 'Some error ss while creating the article.',
       });
     });
 };
@@ -32,17 +33,40 @@ exports.create = (req, res) => {
 // Retrieve all posts from the database.
 exports.findAll = (req, res) => {
   const content = req.query.content;
-  var condition = content ? { Content: { $regex: new RegExp(content), $options: "i" } } : {};
+  var condition = content ? { Content: { $regex: new RegExp(content), $options: 'i' } } : {};
 
-  Post.find(condition).populate('Author').populate('Likes').populate('Comments')
-    .then(data => {
+
+
+  Post.find(condition)
+    .populate('Author')
+    .populate('Likes')
+    .populate('Comments')
+    .sort({ createdAt: -1 })
+    .then((data) => {
       res.send(data);
     })
-    .catch(err => {
+    .catch((err) => {
       res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving posts."
+        message: err.message || 'Some error occurred while retrieving posts.',
       });
+    });
+};
+
+exports.toggleLike = (req, res) => {
+  const { _id } = req.params;
+
+  Post.findOne({ _id })
+    .populate('Likes')
+    .populate('Author')
+    .populate('Comments')
+    .then((post) => {
+      const index = post.Likes.findIndex((user) => user._id == req.userId);
+
+      if (index > -1) post.Likes.splice(index, 1);
+      else post.Likes.push(req.userId);
+
+      post.save();
+      res.status(201).send(post);
     });
 };
 
