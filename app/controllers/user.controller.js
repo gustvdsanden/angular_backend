@@ -137,7 +137,6 @@ exports.update = (req, res) => {
 
   User.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
     .then((user) => {
-      console.log(user);
       if (!user) {
         res.status(404).send({
           message: `Cannot update user with id=${id}. Maybe user was not found!`,
