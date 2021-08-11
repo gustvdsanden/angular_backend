@@ -1,7 +1,7 @@
 const config = require('../config/auth.config');
 const db = require('../models');
 const User = db.users;
-
+const Role = db.roles;
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
 
@@ -12,6 +12,7 @@ exports.create = (req, res) => {
     res.status(400).send({ message: 'Content can not be empty!' });
     return;
   }
+  const role = Role.find({ Name: 'Gebruiker' });
 
   // Create a user
   const user = new User({
@@ -20,7 +21,7 @@ exports.create = (req, res) => {
     Email: req.body.Email,
     Username: req.body.Username ? req.body.Username : req.body.Email,
     Password: bcrypt.hashSync(req.body.Password),
-    Role: req.body.Role,
+    Role: role,
   });
 
   // Save user in the database
