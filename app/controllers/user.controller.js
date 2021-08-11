@@ -21,7 +21,7 @@ exports.create = (req, res) => {
     Email: req.body.Email,
     Username: req.body.Username ? req.body.Username : req.body.Email,
     Password: bcrypt.hashSync(req.body.Password),
-    Role: role,
+    Role: role._id,
   });
 
   // Save user in the database
