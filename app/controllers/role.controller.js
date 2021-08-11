@@ -4,10 +4,8 @@ const Role = db.roles;
 
 // Retrieve all articles from the database.
 exports.findAll = (req, res) => {
-  const name = req.query.Name;
-  var condition = name ? { name: { $regex: new RegExp(name), $options: "i" } } : {};
-
-  Role.find(condition)
+  
+  Role.find()
     .then(data => {
       res.send(data);
     })

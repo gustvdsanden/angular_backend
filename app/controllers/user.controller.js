@@ -20,7 +20,7 @@ exports.create = (req, res) => {
     Email: req.body.Email,
     Username: req.body.Username ? req.body.Username : req.body.Email,
     Password: bcrypt.hashSync(req.body.Password),
-    RoleID: req.body.RoleID,
+    Role: req.body.Role,
   });
 
   // Save user in the database
@@ -41,8 +41,7 @@ exports.findOne = (req, res) => {
   const id = req.params.id;
 
   User.findById(id)
-    .populate('RoleID')
-    .populate('Company')
+    .populate('Role')
     .then((data) => {
       if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
       else res.send(data);
@@ -51,6 +50,20 @@ exports.findOne = (req, res) => {
       res.status(500).send({ message: 'Error retrieving user with id=' + id });
     });
 };
+// Find a single user with an id
+exports.findAllOfCompany = (req, res) => {
+  const CompanyId = req.CompanyId;
+  User.find({Company:CompanyId})
+    .populate('Role')
+    .then((data) => {
+      if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
+      else res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Error retrieving user with id=' + id});
+    });
+};
+
 
 exports.authenticate = (req, res) => {
   User.findOne({
@@ -112,6 +125,8 @@ exports.delete = (req, res) => {
 };
 // Update a article by the id in the request
 exports.update = (req, res) => {
+  console.log(req.body)
+  console.log(req.params.id)
   if (!req.body) {
     return res.status(400).send({
       message: 'Data to update can not be empty!',
@@ -122,11 +137,12 @@ exports.update = (req, res) => {
 
   User.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
     .then((user) => {
+      console.log(user);
       if (!user) {
         res.status(404).send({
           message: `Cannot update user with id=${id}. Maybe user was not found!`,
         });
-      } else res.send(user);
+      } else res.status(200).send(req.body);
     })
     .catch((err) => {
       res.status(500).send({

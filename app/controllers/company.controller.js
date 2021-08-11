@@ -22,6 +22,19 @@ exports.findAll = (req, res) => {
       });
     });
 };
+exports.getMine = (req, res) => {
+
+  Company.findById(req.CompanyId)
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving companies."
+      });
+    });
+};
 
 // Find a single company with an id
 exports.findOne = (req, res) => {
@@ -64,7 +77,7 @@ exports.create = (req, res) => {
     .then(async (data) => {
       User.findById(req.UserId).then(result => {
         Role.find({ Name: 'Superadmin' }).then((role) => {
-          result.RoleID = role[0]._id;
+          result.Role = role[0]._id;
           result.Company = company.id;
           result.save(result);
         })
@@ -75,6 +88,35 @@ exports.create = (req, res) => {
     .catch((err) => {
       res.status(500).send({
         message: err.message || 'Some error ss while creating the company.',
+      });
+    });
+};
+// Update a article by the id in the request
+exports.update = (req, res) => {
+  if (!req.body) {
+    return res.status(400).send({
+      message: 'Data to update can not be empty!',
+    });
+  }
+  if(!req.body.Name){
+    return res.status(400).send({
+      message: 'Needs a name mate',
+    });
+  }
+
+  const id = req.params.id;
+  Company.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
+    .then((company) => {
+      if (!company) {
+        res.status(404).send({
+          message: `Cannot update company with id=${id}. Maybe company was not found!`,
+        });
+      } else res.status(200).send(req.body);
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: 'Error updating company with id=' + id,
+        error: err,
       });
     });
 };
