@@ -14,32 +14,29 @@ exports.create = (req, res) => {
     return;
   }
 
-  // Create a article
-  const post = new Post({
+  const newPostVariables = {
     Content: req.body.Content,
-    Company: req.CompanyId,
     Author: req.UserId,
-  });
+  };
+
+  if (req.CompanyId) newPostVariables.CompanyId = req.CompanyId;
+
+  // Create a article
+  const post = new Post(newPostVariables);
 
   // Save article in the database
-  post
-    .save(post)
-    .then(async (data) => {
-      const populatedPost = await data
-        .populate('Author')
-        .populate('Likes')
-        .populate('Company')
-        .populate({ path: 'Comments', populate: { path: 'Author' } });
-
-      res.send(populatedPost);
-
-      global.io.emit('post_create', post);
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || 'Some error ss while creating the article.',
+  post.save((error, post) => {
+    if (error) throw new Error('Post kon niet geplaatst worden!');
+    console.log('post', post);
+    post
+      .populate('Author')
+      .populate('Likes')
+      .populate('Company')
+      .populate({ path: 'Comments', populate: { path: 'Author' } }, (post) => {
+        global.io.emit('post_create', post);
+        res.send(post);
       });
-    });
+  });
 };
 
 // Retrieve all posts from the database of your company
