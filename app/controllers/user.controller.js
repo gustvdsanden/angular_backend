@@ -12,9 +12,9 @@ exports.create = (req, res) => {
     res.status(400).send({ message: 'Content can not be empty!' });
     return;
   }
-  const role = Role.find({ Name: 'Gebruiker' });
+  Role.findOne({ Name: 'Gebruiker' }).then((role)=>{
 
-  // Create a user
+    // Create a user
   const user = new User({
     FirstName: req.body.FirstName,
     LastName: req.body.LastName,
@@ -23,7 +23,7 @@ exports.create = (req, res) => {
     Password: bcrypt.hashSync(req.body.Password),
     Role: role._id,
   });
-
+  console.log(user);
   // Save user in the database
   user
     .save(user)
@@ -35,6 +35,9 @@ exports.create = (req, res) => {
         message: err.message || 'Some error occurred while creating the user.',
       });
     });
+  });
+
+  
 };
 
 // Find a single user with an id
