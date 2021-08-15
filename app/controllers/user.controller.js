@@ -1,7 +1,7 @@
 const config = require('../config/auth.config');
 const db = require('../models');
 const User = db.users;
-
+const Role = db.roles;
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
 
@@ -12,28 +12,31 @@ exports.create = (req, res) => {
     res.status(400).send({ message: 'Content can not be empty!' });
     return;
   }
+  Role.findOne({ Name: 'Gebruiker' }).then((role) => {
 
-  // Create a user
-  const user = new User({
-    FirstName: req.body.FirstName,
-    LastName: req.body.LastName,
-    Email: req.body.Email,
-    Username: req.body.Username ? req.body.Username : req.body.Email,
-    Password: bcrypt.hashSync(req.body.Password),
-    RoleID: req.body.RoleID,
+    // Create a user
+    const user = new User({
+      FirstName: req.body.FirstName,
+      LastName: req.body.LastName,
+      Email: req.body.Email,
+      Username: req.body.Username ? req.body.Username : req.body.Email,
+      Password: bcrypt.hashSync(req.body.Password),
+      Role: role._id,
+    });
+    // Save user in the database
+    user
+      .save(user)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch((err) => {
+        res.status(500).send({
+          message: err.message || 'Some error occurred while creating the user.',
+        });
+      });
   });
 
-  // Save user in the database
-  user
-    .save(user)
-    .then((data) => {
-      res.send(data);
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || 'Some error occurred while creating the user.',
-      });
-    });
+
 };
 
 // Find a single user with an id
@@ -41,11 +44,57 @@ exports.findOne = (req, res) => {
   const id = req.params.id;
 
   User.findById(id)
-    .populate('RoleID')
+    .populate('Role')
     .populate('Company')
     .then((data) => {
       if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
       else res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Error retrieving user with id=' + id });
+    });
+};
+// Find a single user with an id
+exports.findAllOfCompany = (req, res) => {
+  const CompanyId = req.CompanyId;
+  User.find({ Company: CompanyId })
+    .populate('Role')
+    .then((data) => {
+      if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
+      else res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Error retrieving user with id=' + id });
+    });
+};
+
+//find users without company
+exports.findNoCompany = (req, res) => {
+  User.find({ Company: null })
+    .populate('Role')
+    .then((data) => {
+      if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
+      else res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Error retrieving user with id=' + id });
+    });
+};
+
+//find users without company
+exports.addToCompany = (req, res) => {
+  const id = req.params.id
+
+  User.findOne({ _id: id })
+    .then((data) => {
+      Role.findOne({ Name: 'Werknemer' }).then((role) => {
+        data.Role = role._id;
+        data.Company = req.CompanyId;
+        data.save(data).then((user) => {
+          res.status(200).send(user);
+        })
+
+      })
     })
     .catch((err) => {
       res.status(500).send({ message: 'Error retrieving user with id=' + id });
@@ -78,6 +127,28 @@ exports.authenticate = (req, res) => {
       });
     }
     var token = jwt.sign({ id: user.id, CompanyId: user.Company ? user.Company : '' }, config.secret, {
+      expiresIn: 86400, // 24 hours
+    });
+    res.status(200).send({
+      _id: user._id,
+      AccessToken: token,
+      CompanyId: user.Company ? user.Company : '',
+    });
+  });
+};
+
+exports.updateToken = (req, res) => {
+  User.findOne({
+    _id: req.UserId,
+  }).exec((err, user) => {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+    if (!user) {
+      return res.status(404).send({ message: 'User Not found.' });
+    }
+    var token = jwt.sign({ id: req.UserId, CompanyId: user.Company ? user.Company : '' }, config.secret, {
       expiresIn: 86400, // 24 hours
     });
     res.status(200).send({
@@ -126,7 +197,7 @@ exports.update = (req, res) => {
         res.status(404).send({
           message: `Cannot update user with id=${id}. Maybe user was not found!`,
         });
-      } else res.send(user);
+      } else res.status(200).send(req.body);
     })
     .catch((err) => {
       res.status(500).send({

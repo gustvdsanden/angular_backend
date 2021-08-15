@@ -11,7 +11,7 @@ module.exports = mongoose => {
         Username: String,
         Password: String,
         Company: {type: Schema.Types.ObjectId, ref: 'Company'},
-        RoleID: {type: Schema.Types.ObjectId, ref: 'Role'}
+        Role: {type: Schema.Types.ObjectId, ref: 'Role'}
       },
       { timestamps: true }
     )

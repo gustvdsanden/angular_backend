@@ -1,13 +1,11 @@
 module.exports = app => {
   const roles = require("../controllers/role.controller.js");
-
+  const { authJwt } = require("../middlewares");
   var router = require("express").Router();
 
   // Retrieve all roles
-  router.get("/", roles.findAll);
+  router.route("/").get([authJwt.verifyToken], roles.findAll);
 
-  // Retrieve a single role with id
-  router.get("/:id", roles.findOne);
 
   app.use('/api/Role', router);
 };
