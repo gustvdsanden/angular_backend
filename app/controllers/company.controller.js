@@ -76,8 +76,8 @@ exports.create = (req, res) => {
     .save(company)
     .then(async (data) => {
       User.findById(req.UserId).then(result => {
-        Role.find({ Name: 'Superadmin' }).then((role) => {
-          result.Role = role[0]._id;
+        Role.findOne({ Name: 'Superadmin' }).then((role) => {
+          result.Role = role._id;
           result.Company = company.id;
           result.save(result);
         })

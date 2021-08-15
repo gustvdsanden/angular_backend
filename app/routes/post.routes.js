@@ -11,6 +11,6 @@ module.exports = (app) => {
   router.route('/:_id/comment').post([authJwt.verifyToken], posts.addComment);
 
   router.route('/:_id').delete([authJwt.verifyToken], posts.delete);
-
+  router.route('Post/:id/Comment').post([authJwt.verifyToken], posts.addComment)
   app.use('/api/Post', router);
 };

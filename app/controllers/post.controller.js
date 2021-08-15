@@ -14,35 +14,31 @@ exports.create = (req, res) => {
     return;
   }
 
-  const newPostVariables = {
+  const post = new Post({
     Content: req.body.Content,
     Author: req.UserId,
-  };
+    Company: req.CompanyId
+  });
 
-  if (req.CompanyId) newPostVariables.CompanyId = req.CompanyId;
-
-  // Create a article
-  const post = new Post(newPostVariables);
 
   // Save article in the database
-  post.save((error, post) => {
-    if (error) throw new Error('Post kon niet geplaatst worden!');
-    console.log('post', post);
-    post
-      .populate('Author')
-      .populate('Likes')
-      .populate('Company')
-      .populate({ path: 'Comments', populate: { path: 'Author' } }, (post) => {
-        global.io.emit('post_create', post);
-        res.send(post);
-      });
-  });
+  post.save(post)
+    .then((result) => {
+      Post.findOne({ _id: result._id })
+        .populate('Author')
+        .populate('Company')
+        .populate('Company')
+        .populate({ path: 'Comments', populate: { path: 'Author' } })
+        .then(data => {
+          res.send(data);
+        })
+
+    });
 };
 
 // Retrieve all posts from the database of your company
 exports.findAll = (req, res) => {
   const condition = req.CompanyId ? { Company: req.CompanyId } : {};
-
   Post.find(condition)
     .populate('Author')
     .populate('Likes')

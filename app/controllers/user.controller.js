@@ -12,32 +12,31 @@ exports.create = (req, res) => {
     res.status(400).send({ message: 'Content can not be empty!' });
     return;
   }
-  Role.findOne({ Name: 'Gebruiker' }).then((role)=>{
+  Role.findOne({ Name: 'Gebruiker' }).then((role) => {
 
     // Create a user
-  const user = new User({
-    FirstName: req.body.FirstName,
-    LastName: req.body.LastName,
-    Email: req.body.Email,
-    Username: req.body.Username ? req.body.Username : req.body.Email,
-    Password: bcrypt.hashSync(req.body.Password),
-    Role: role._id,
-  });
-  console.log(user);
-  // Save user in the database
-  user
-    .save(user)
-    .then((data) => {
-      res.send(data);
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || 'Some error occurred while creating the user.',
-      });
+    const user = new User({
+      FirstName: req.body.FirstName,
+      LastName: req.body.LastName,
+      Email: req.body.Email,
+      Username: req.body.Username ? req.body.Username : req.body.Email,
+      Password: bcrypt.hashSync(req.body.Password),
+      Role: role._id,
     });
+    // Save user in the database
+    user
+      .save(user)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch((err) => {
+        res.status(500).send({
+          message: err.message || 'Some error occurred while creating the user.',
+        });
+      });
   });
 
-  
+
 };
 
 // Find a single user with an id
@@ -58,17 +57,49 @@ exports.findOne = (req, res) => {
 // Find a single user with an id
 exports.findAllOfCompany = (req, res) => {
   const CompanyId = req.CompanyId;
-  User.find({Company:CompanyId})
+  User.find({ Company: CompanyId })
     .populate('Role')
     .then((data) => {
       if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
       else res.send(data);
     })
     .catch((err) => {
-      res.status(500).send({ message: 'Error retrieving user with id=' + id});
+      res.status(500).send({ message: 'Error retrieving user with id=' + id });
     });
 };
 
+//find users without company
+exports.findNoCompany = (req, res) => {
+  User.find({ Company: null })
+    .populate('Role')
+    .then((data) => {
+      if (!data) res.status(404).send({ message: 'Not found user with id ' + id });
+      else res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Error retrieving user with id=' + id });
+    });
+};
+
+//find users without company
+exports.addToCompany = (req, res) => {
+  const id = req.params.id
+
+  User.findOne({ _id: id })
+    .then((data) => {
+      Role.findOne({ Name: 'Werknemer' }).then((role) => {
+        data.Role = role._id;
+        data.Company = req.CompanyId;
+        data.save(data).then((user) => {
+          res.status(200).send(user);
+        })
+
+      })
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Error retrieving user with id=' + id });
+    });
+};
 
 exports.authenticate = (req, res) => {
   User.findOne({
@@ -106,6 +137,28 @@ exports.authenticate = (req, res) => {
   });
 };
 
+exports.updateToken = (req, res) => {
+  User.findOne({
+    _id: req.UserId,
+  }).exec((err, user) => {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+    if (!user) {
+      return res.status(404).send({ message: 'User Not found.' });
+    }
+    var token = jwt.sign({ id: req.UserId, CompanyId: user.Company ? user.Company : '' }, config.secret, {
+      expiresIn: 86400, // 24 hours
+    });
+    res.status(200).send({
+      _id: user._id,
+      AccessToken: token,
+      CompanyId: user.Company ? user.Company : '',
+    });
+  });
+};
+
 // Delete a user with the specified id in the request
 exports.delete = (req, res) => {
   const id = req.params.id;
@@ -130,8 +183,6 @@ exports.delete = (req, res) => {
 };
 // Update a article by the id in the request
 exports.update = (req, res) => {
-  console.log(req.body)
-  console.log(req.params.id)
   if (!req.body) {
     return res.status(400).send({
       message: 'Data to update can not be empty!',
